@@ -1,8 +1,7 @@
 -- Aplica desconto na comanda inteira
-
 DELIMITER $$
 
-CREATE PROCEDURE aplica_desconto(
+CREATE PROCEDURE prc_aplica_desconto(
     IN p_id_comanda SMALLINT,
     IN p_percentual DECIMAL(5,2)
 )
@@ -25,7 +24,8 @@ END$$
 
 DELIMITER ;
 
--- Calcula total que o cliente já gastou no restaurante
+-- Calcula total que o cliente já gastou no restaurante utilizando a tabela de logs
+DELIMITER $$
 
 CREATE TABLE Cliente_Total (
     id_registro INT AUTO_INCREMENT PRIMARY KEY,
@@ -35,9 +35,7 @@ CREATE TABLE Cliente_Total (
     data_atualizacao DATETIME
 );
 
-DELIMITER $$
-
-CREATE PROCEDURE cliente_total()
+CREATE PROCEDURE prc_cliente_total()
 BEGIN
     DECLARE done INT DEFAULT 0;
     DECLARE v_cpf CHAR(11);
@@ -59,12 +57,10 @@ BEGIN
             LEAVE read_loop;
         END IF;
 
-        SELECT IFNULL(SUM(c.total), 0)
+        SELECT IFNULL(SUM(l.total_comanda), 0)
         INTO v_total
-        FROM Comanda AS c
-        JOIN Cria AS cr ON c.id_comanda = cr.id_comanda
-        JOIN Senta AS s ON cr.id_mesa = s.id_mesa
-        WHERE s.cpf = v_cpf;
+        FROM comanda_paga_log AS l
+        WHERE l.cpf_cliente = v_cpf;
 
         INSERT INTO Cliente_Total (cpf_cliente, nome_cliente, total_gasto, data_atualizacao)
         VALUES (v_cpf, v_nome, v_total, NOW());

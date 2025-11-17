@@ -130,13 +130,19 @@ CREATE TABLE Cliente_Total (
     data_atualizacao DATETIME
 );
 
-CREATE TABLE Reserva_Cancelada_Log (
-    id_log INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE comanda_paga_log (
+    id_log SMALLINT AUTO_INCREMENT PRIMARY KEY,
+    id_comanda SMALLINT,
+    cpf_cliente CHAR(11),
+    nome_cliente VARCHAR(100),
     id_reserva SMALLINT,
-    cliente_cpf CHAR(11),
-    novo_status VARCHAR(20) DEFAULT "CANCELADA",
-    data_ocorrencia DATETIME
+    total_comanda DECIMAL(10,2),
+    data_hora_criacao DATETIME,
+    status_comanda VARCHAR(20),
+    id_func_garcom SMALLINT,
+    data_registro DATETIME
 );
+
 
 -- Índices
 
@@ -156,22 +162,23 @@ ON Funcionario (turno);
 
 -- Reserva completa
 CREATE OR REPLACE VIEW vw_reservas_completas AS
-    SELECT r.id_reserva, r.cliente_cpf, c.nome AS nome_cliente, c.telefone AS telefone_cliente, r.qnt_pessoas, r.data_hora_chegada, r.status_reserva, m.id_mesa, m.status_mesa, m.capacidade, g.id_func AS id_garcom, f.nome AS nome_garcom, f.turno AS turno_garcom
-    FROM Reserva r
-    JOIN Cliente c ON r.cliente_cpf = c.cpf
+	SELECT r.id_reserva, r.cliente_cpf, c.nome, r.qnt_pessoas, r.data_hora_chegada, r.status_reserva, m.id_mesa, m.status_mesa, m.capacidade, g.id_func
+	FROM Reserva r
+	JOIN Cliente c ON r.cliente_cpf = c.cpf
 	LEFT JOIN Mesa m ON m.id_reserva = r.id_reserva
 	LEFT JOIN Garcom g ON m.id_func = g.id_func
 	LEFT JOIN Funcionario f ON g.id_func = f.id_func
-    ORDER BY r.data_hora_chegada;
+	ORDER BY r.data_hora_chegada;
 
 -- Mesas atualmente ocupadas completas
 CREATE OR REPLACE VIEW vw_mesas_ocupadas_completas AS
-	SELECT m.id_mesa, m.status_mesa, m.capacidade, r.id_reserva, r.data_hora_chegada, r.status_reserva, c.cpf AS cliente_cpf, c.nome AS cliente_nome, c.telefone AS cliente_telefone, f.id_func AS id_garcom, f.nome AS nome_garcom, f.turno AS turno_garcom
+	SELECT m.id_mesa, m.status_mesa, m.capacidade, r.id_reserva, r.data_hora_chegada, r.status_reserva, c.cpf, co.id_comanda, co.total
 	FROM Mesa m
 	LEFT JOIN Reserva r ON m.id_reserva = r.id_reserva
 	LEFT JOIN Cliente c ON r.cliente_cpf = c.cpf
 	LEFT JOIN Garcom g ON m.id_func = g.id_func
 	LEFT JOIN Funcionario f ON g.id_func = f.id_func
+	LEFT JOIN Comanda co ON m.id_mesa = co.id_mesa
 	WHERE m.status_mesa = 'OCUPADA'
 	ORDER BY r.data_hora_chegada;
 
@@ -265,8 +272,7 @@ END$$
 
 DELIMITER ;
 
--- Calcula total que o cliente já gastou no restaurante
-
+-- Calcula total que o cliente já gastou no restaurante utilizando a tabela de logs
 DELIMITER $$
 
 CREATE PROCEDURE prc_cliente_total()
@@ -276,7 +282,8 @@ BEGIN
     DECLARE v_nome VARCHAR(100);
     DECLARE v_total DECIMAL(10,2);
 
-    DECLARE cur CURSOR FOR SELECT cpf, nome FROM Cliente;
+    DECLARE cur CURSOR FOR
+        SELECT cpf, nome FROM Cliente;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
 
@@ -290,12 +297,10 @@ BEGIN
             LEAVE read_loop;
         END IF;
 
-        SELECT IFNULL(SUM(c.total), 0)
+        SELECT IFNULL(SUM(l.total_comanda), 0)
         INTO v_total
-        FROM Reserva r
-        LEFT JOIN Mesa m ON m.id_reserva = r.id_reserva
-        LEFT JOIN Comanda c ON c.id_comanda = m.id_comanda
-        WHERE r.cliente_cpf = v_cpf;
+        FROM comanda_paga_log AS l
+        WHERE l.cpf_cliente = v_cpf;
 
         INSERT INTO Cliente_Total (cpf_cliente, nome_cliente, total_gasto, data_atualizacao)
         VALUES (v_cpf, v_nome, v_total, NOW());
@@ -306,20 +311,48 @@ END$$
 
 DELIMITER ;
 
+
 -- Triggers
 
--- Registra na tabela de logs toda vez que uma reserva é cancelada
+-- Registra na tabela de logs toda vez que uma comanda é paga
 DELIMITER $$
 
-CREATE TRIGGER trg_log_cancelamento_reserva
-AFTER UPDATE ON Reserva
+CREATE TRIGGER trg_comanda_paga_log
+AFTER UPDATE ON Comanda
 FOR EACH ROW
 BEGIN
-    IF NEW.status_reserva = 'CANCELADA' THEN
-        INSERT INTO Reserva_Cancelada_Log (id_reserva, cliente_cpf, data_ocorrencia)
-        VALUES (NEW.id_reserva, NEW.cliente_cpf, NOW());
+    IF NEW.status_comanda = 'PAGA' AND OLD.status_comanda <> 'PAGA' THEN
+        
+        INSERT INTO comanda_paga_log (
+            id_comanda,
+            cpf_cliente,
+            nome_cliente,
+            id_reserva,
+            total_comanda,
+            data_hora_criacao,
+            status_comanda,
+            id_func_garcom,
+            data_registro
+        )
+        SELECT
+            NEW.id_comanda,
+            c.cpf,
+            c.nome,
+            r.id_reserva,
+            NEW.total,
+            NEW.data_hora_criacao,
+            NEW.status_comanda,
+            m.id_func,
+            NOW()
+        FROM Comanda co
+        JOIN Mesa m ON m.id_mesa = co.id_mesa
+        LEFT JOIN Reserva r ON r.id_reserva = m.id_reserva
+        LEFT JOIN Cliente c ON c.cpf = r.cliente_cpf
+        WHERE co.id_comanda = NEW.id_comanda;
+
     END IF;
-END $$
+
+END$$
 
 DELIMITER ;
 
@@ -400,6 +433,20 @@ BEGIN
                     SET MESSAGE_TEXT = 'Erro: este garçom já atingiu o número máximo de mesas.';
             END IF;
         END IF;
+    END IF;
+END $$
+
+DELIMITER ;
+
+-- Adiciona o valor da comissão do garçom ao total da comanda
+DELIMITER $$
+
+CREATE TRIGGER trg_atualiza_total_comanda_fechada
+BEFORE UPDATE ON Comanda
+FOR EACH ROW
+BEGIN
+    IF NEW.status_comanda = 'FECHADA' AND OLD.status_comanda = 'ABERTA' THEN
+        SET NEW.total = NEW.total + fnc_calcula_comissao(NEW.id_comanda);
     END IF;
 END $$
 

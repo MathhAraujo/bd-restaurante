@@ -32,7 +32,6 @@ END$$
 DELIMITER ;
 
 -- Calcula taxa de ocupação atual das mesas
-
 DELIMITER $$
 
 CREATE FUNCTION ocupacao()

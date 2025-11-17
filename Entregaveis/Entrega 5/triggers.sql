@@ -1,23 +1,55 @@
--- Registra na tabela de logs toda vez que uma reserva é cancelada
-CREATE TABLE Reserva_Cancelada_Log (
+-- Registra na tabela de logs toda vez que uma comanda é paga
+CREATE TABLE comanda_paga_log (
     id_log INT AUTO_INCREMENT PRIMARY KEY,
+    id_comanda SMALLINT,
+    cpf_cliente CHAR(11),
+    nome_cliente VARCHAR(100),
     id_reserva SMALLINT,
-    cliente_cpf CHAR(11),
-    novo_status VARCHAR(20) DEFAULT "cancelada",
-    data_ocorrencia DATETIME
+    total_comanda DECIMAL(10,2),
+    data_hora_criacao DATETIME,
+    status_comanda VARCHAR(20),
+    id_func_garcom SMALLINT,
+    data_registro DATETIME
 );
 
 DELIMITER $$
 
-CREATE TRIGGER trg_log_cancelamento_reserva
-AFTER UPDATE ON Reserva
+CREATE TRIGGER trg_comanda_paga_log
+AFTER UPDATE ON Comanda
 FOR EACH ROW
 BEGIN
-    IF NEW.status_reserva = 'cancelada' THEN
-        INSERT INTO Reserva_Cancelada_Log (id_reserva, cliente_cpf, data_cancelamento)
-        VALUES (NEW.id_reserva, NEW.cliente_cpf, NOW());
+    IF NEW.status_comanda = 'PAGA' AND OLD.status_comanda <> 'PAGA' THEN
+        
+        INSERT INTO comanda_paga_log (
+            id_comanda,
+            cpf_cliente,
+            nome_cliente,
+            id_reserva,
+            total_comanda,
+            data_hora_criacao,
+            status_comanda,
+            id_func_garcom,
+            data_registro
+        )
+        SELECT
+            NEW.id_comanda,
+            c.cpf,
+            c.nome,
+            r.id_reserva,
+            NEW.total,
+            NEW.data_hora_criacao,
+            NEW.status_comanda,
+            m.id_func,
+            NOW()
+        FROM Comanda co
+        JOIN Mesa m ON m.id_mesa = co.id_mesa
+        LEFT JOIN Reserva r ON r.id_reserva = m.id_reserva
+        LEFT JOIN Cliente c ON c.cpf = r.cliente_cpf
+        WHERE co.id_comanda = NEW.id_comanda;
+
     END IF;
-END $$
+
+END$$
 
 DELIMITER ;
 
@@ -98,6 +130,20 @@ BEGIN
                     SET MESSAGE_TEXT = 'Erro: este garçom já atingiu o número máximo de mesas.';
             END IF;
         END IF;
+    END IF;
+END $$
+
+DELIMITER ;
+
+-- Adiciona o valor da comissão do garçom ao total da comanda
+DELIMITER $$
+
+CREATE TRIGGER trg_atualiza_total_comanda_fechada
+BEFORE UPDATE ON Comanda
+FOR EACH ROW
+BEGIN
+    IF NEW.status_comanda = 'FECHADA' AND OLD.status_comanda = 'ABERTA' THEN
+        SET NEW.total = NEW.total + fnc_calcula_comissao(NEW.id_comanda);
     END IF;
 END $$
 
