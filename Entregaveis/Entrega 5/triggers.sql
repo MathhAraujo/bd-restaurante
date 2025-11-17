@@ -70,3 +70,35 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+-- Checa se o funcionario a atender a mesa é garçom e se a quantidade de mesas do garçom é menor que o max antes de adicionar
+DELIMITER $$
+
+CREATE TRIGGER trg_check_garcom_max_mesas
+BEFORE UPDATE ON Mesa
+FOR EACH ROW
+BEGIN
+    DECLARE mesas_atribuidas INT;
+    DECLARE limite_max TINYINT;
+
+    IF OLD.id_func <> NEW.id_func AND NEW.id_func IS NOT NULL THEN
+
+        IF EXISTS (SELECT 1 FROM Garcom WHERE id_func = NEW.id_func) THEN
+
+            SELECT COUNT(*) INTO mesas_atribuidas
+            FROM Mesa
+            WHERE id_func = NEW.id_func;
+
+            SELECT qnt_mesas_max INTO limite_max
+            FROM Garcom
+            WHERE id_func = NEW.id_func;
+
+            IF mesas_atribuidas >= limite_max THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'Erro: este garçom já atingiu o número máximo de mesas.';
+            END IF;
+        END IF;
+    END IF;
+END $$
+
+DELIMITER ;

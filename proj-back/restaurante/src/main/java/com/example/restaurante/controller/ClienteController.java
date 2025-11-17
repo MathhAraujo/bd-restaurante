@@ -66,9 +66,7 @@ public class ClienteController {
 
     @DeleteMapping("delete/{cpf}")
     public ResponseEntity<?> deleteCliente(@PathVariable("cpf") String cpf) {
-        int ok = clienteService.deleteCliente(cpf);
-
-        if (ok == 0) {
+        if (clienteService.deleteCliente(cpf) == 0) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 

@@ -68,10 +68,8 @@ public class ReservaService {
     }
 
     public Reserva updateReserva(Reserva reserva) {
-        int ok = reservaDao.updateReserva(reserva);
-        if (ok == 1) {
-            reserva.setCliente_cpf(fetchReservaById(reserva.getId_reserva()).getCliente_cpf());
-            return reserva;
+        if (reservaDao.updateReserva(reserva) == 1) {
+            return fetchReservaById(reserva.getId_reserva());
         }
         return null;
     }

@@ -2,14 +2,14 @@ package com.example.restaurante.service;
 
 import com.example.restaurante.dao.ClienteDao;
 import com.example.restaurante.model.Cliente;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class ClienteService {
 
     private final ClienteDao clienteDao;
@@ -37,16 +37,14 @@ public class ClienteService {
     }
 
     public Cliente createCliente(Cliente cliente) {
-        int ok = clienteDao.insertCliente(cliente);
-        if (ok == 1) {
+        if (clienteDao.insertCliente(cliente) == 1) {
             return cliente;
         }
         return null;
     }
 
     public Cliente updateCliente(Cliente cliente) {
-        int ok = clienteDao.updateCliente(cliente);
-        if (ok == 1) {
+        if (clienteDao.updateCliente(cliente) == 1) {
             return cliente;
         }
         return null;

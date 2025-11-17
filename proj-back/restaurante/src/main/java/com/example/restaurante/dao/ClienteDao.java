@@ -21,7 +21,7 @@ public class ClienteDao {
             rs.getString("cpf"),
             rs.getString("nome"),
             rs.getString("telefone"),
-            rs.getObject("nascimento", LocalDate.class)
+            rs.getObject("data_nascimento", LocalDate.class)
         );
     }
 
@@ -39,11 +39,11 @@ public class ClienteDao {
 
 
     public int insertCliente(Cliente cliente) {
-        return this.jdbcTemplate.update("INSERT INTO Cliente(cpf, nome, telefone, nascimento) VALUES(?,?,?,?)", cliente.getCpf(), cliente.getNome(), cliente.getTelefone(), cliente.getData_nascimento());
+        return this.jdbcTemplate.update("INSERT INTO Cliente(cpf, nome, telefone, data_nascimento) VALUES(?,?,?,?)", cliente.getCpf(), cliente.getNome(), cliente.getTelefone(), cliente.getData_nascimento());
     }
 
     public int updateCliente(Cliente cliente) {
-        return this.jdbcTemplate.update("UPDATE Cliente SET Nome=?, Telefone=?, Nascimento=? WHERE cpf=?", cliente.getNome(), cliente.getTelefone(), cliente.getData_nascimento(), cliente.getCpf());
+        return this.jdbcTemplate.update("UPDATE Cliente SET Nome=?, Telefone=?, Data_nascimento=? WHERE cpf=?", cliente.getNome(), cliente.getTelefone(), cliente.getData_nascimento(), cliente.getCpf());
     }
 
     public int deleteCliente(String cpf) {

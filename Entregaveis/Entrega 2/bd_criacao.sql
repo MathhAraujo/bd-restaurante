@@ -5,7 +5,7 @@ CREATE TABLE Cliente (
     cpf CHAR(11) PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     telefone CHAR(11) NOT NULL UNIQUE,
-    nascimento DATE NOT NULL
+    data_nascimento DATE NOT NULL
 );
 
 CREATE TABLE Reserva (
@@ -13,8 +13,8 @@ CREATE TABLE Reserva (
     cliente_cpf CHAR(11) NOT NULL,
     qnt_pessoas TINYINT NOT NULL,
     data_hora_chegada DATETIME NOT NULL,
-    status_reserva SET('ABERTA', 'EM_ATENDIMENTO','CANCELADA') DEFAULT 'ABERTA',
-    FOREIGN KEY (Cliente_Cpf) REFERENCES Cliente(Cpf) ON DELETE CASCADE,
+    status_reserva ENUM('ABERTA', 'EM_ATENDIMENTO','CANCELADA') DEFAULT 'ABERTA',
+    FOREIGN KEY (cliente_Cpf) REFERENCES Cliente(Cpf) ON DELETE CASCADE,
     CHECK (qnt_pessoas > 0)
 );
 
@@ -57,9 +57,8 @@ CREATE TABLE Supervisiona (
 CREATE TABLE Mesa (
     id_mesa SMALLINT PRIMARY KEY AUTO_INCREMENT,
     id_func SMALLINT DEFAULT NULL,
-    id_comanda SMALLINT DEFAULT NULL,
     id_reserva SMALLINT DEFAULT NULL,
-    estado_mesa ENUM('LIVRE', 'OCUPADA', 'RESERVADA') NOT NULL DEFAULT 'LIVRE',
+    status_mesa ENUM('LIVRE', 'OCUPADA', 'RESERVADA') NOT NULL DEFAULT 'LIVRE',
     capacidade TINYINT NOT NULL,
     FOREIGN KEY (id_reserva) REFERENCES Reserva(id_reserva) ON DELETE SET NULL,
     FOREIGN KEY (id_func) REFERENCES Garcom(id_func) ON DELETE SET NULL,
@@ -68,14 +67,13 @@ CREATE TABLE Mesa (
 
 CREATE TABLE Comanda (
     id_comanda SMALLINT PRIMARY KEY AUTO_INCREMENT,
+    id_mesa SMALLINT NOT NULL,
     total DECIMAL(8, 2) DEFAULT 0,
     data_hora_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
-    estado_comanda SET('ABERTA', 'FECHADA', 'PAGA') NOT NULL DEFAULT 'ABERTA',
+    status_comanda ENUM('ABERTA', 'FECHADA', 'PAGA') NOT NULL DEFAULT 'ABERTA',
+    FOREIGN KEY (id_mesa) REFERENCES Mesa(id_mesa),
     CHECK (total >= 0)
 );
-
--- id_comanda para fk após criação da tabela comanda
-ALTER TABLE Mesa ADD CONSTRAINT FOREIGN KEY (id_comanda) REFERENCES Comanda(id_comanda) ON DELETE SET NULL;
 
 CREATE TABLE Item (
     id_item SMALLINT PRIMARY KEY AUTO_INCREMENT,
@@ -111,7 +109,7 @@ CREATE TABLE Bebida (
     volume SMALLINT,
     teor_alcoolico TINYINT DEFAULT 0,
     marca VARCHAR(50),
-    FOREIGN KEY (Id_Item) REFERENCES Item(Id_Item) ON DELETE CASCADE,
+    FOREIGN KEY (id_Item) REFERENCES Item(Id_Item) ON DELETE CASCADE,
     CHECK (volume > 0 AND teor_alcoolico >= 0)
 );
 
@@ -148,8 +146,8 @@ ON Reserva (data_hora_chegada);
 CREATE INDEX ndx_reserva_cliente
 ON Reserva (cliente_cpf);
 
-CREATE INDEX ndx_mesa_estado
-ON Mesa (estado_mesa);
+CREATE INDEX ndx_status_mesa
+ON Mesa (status_mesa);
 
 CREATE INDEX ndx_funcionario_turno
 ON Funcionario (turno);
@@ -158,7 +156,7 @@ ON Funcionario (turno);
 
 -- Reserva completa
 CREATE OR REPLACE VIEW vw_reservas_completas AS
-    SELECT r.id_reserva, r.cliente_cpf, c.nome AS nome_cliente, c.telefone AS telefone_cliente, r.qnt_pessoas, r.data_hora_chegada, r.status_reserva, m.id_mesa, m.estado_mesa, m.capacidade, g.id_func AS id_garcom, f.nome AS nome_garcom, f.turno AS turno_garcom
+    SELECT r.id_reserva, r.cliente_cpf, c.nome AS nome_cliente, c.telefone AS telefone_cliente, r.qnt_pessoas, r.data_hora_chegada, r.status_reserva, m.id_mesa, m.status_mesa, m.capacidade, g.id_func AS id_garcom, f.nome AS nome_garcom, f.turno AS turno_garcom
     FROM Reserva r
     JOIN Cliente c ON r.cliente_cpf = c.cpf
 	LEFT JOIN Mesa m ON m.id_reserva = r.id_reserva
@@ -168,13 +166,13 @@ CREATE OR REPLACE VIEW vw_reservas_completas AS
 
 -- Mesas atualmente ocupadas completas
 CREATE OR REPLACE VIEW vw_mesas_ocupadas_completas AS
-	SELECT m.id_mesa, m.estado_mesa, m.capacidade, r.id_reserva, r.data_hora_chegada, r.status_reserva, c.cpf AS cliente_cpf, c.nome AS cliente_nome, c.telefone AS cliente_telefone, f.id_func AS id_garcom, f.nome AS nome_garcom, f.turno AS turno_garcom
+	SELECT m.id_mesa, m.status_mesa, m.capacidade, r.id_reserva, r.data_hora_chegada, r.status_reserva, c.cpf AS cliente_cpf, c.nome AS cliente_nome, c.telefone AS cliente_telefone, f.id_func AS id_garcom, f.nome AS nome_garcom, f.turno AS turno_garcom
 	FROM Mesa m
 	LEFT JOIN Reserva r ON m.id_reserva = r.id_reserva
 	LEFT JOIN Cliente c ON r.cliente_cpf = c.cpf
 	LEFT JOIN Garcom g ON m.id_func = g.id_func
 	LEFT JOIN Funcionario f ON g.id_func = f.id_func
-	WHERE m.estado_mesa = 'OCUPADA'
+	WHERE m.status_mesa = 'OCUPADA'
 	ORDER BY r.data_hora_chegada;
 
 -- Funções
@@ -190,7 +188,7 @@ BEGIN
     DECLARE v_estado VARCHAR(20);
     DECLARE v_comissao DECIMAL(10,2);
 
-    SELECT total, estado_comanda 
+    SELECT total, status_comanda 
     INTO v_total, v_estado
     FROM Comanda
     WHERE id_comanda = p_id_comanda;
@@ -225,7 +223,7 @@ BEGIN
     DECLARE taxa DECIMAL(5,2);
 
     SELECT COUNT(*) INTO total_mesas FROM Mesa;
-    SELECT COUNT(*) INTO mesas_ocupadas FROM Mesa WHERE estado_mesa = 'OCUPADA';
+    SELECT COUNT(*) INTO mesas_ocupadas FROM Mesa WHERE status_mesa = 'OCUPADA';
 
     IF total_mesas > 0 THEN
         SET taxa = (mesas_ocupadas / total_mesas) * 100;
@@ -371,6 +369,38 @@ BEGIN
     UPDATE Comanda
     SET total = total + v_total_adicional
     WHERE id_comanda = NEW.id_comanda;
+END $$
+
+DELIMITER ;
+
+-- Checa se o funcionario a atender a mesa é garçom e se a quantidade de mesas do garçom é menor que o max antes de adicionar
+DELIMITER $$
+
+CREATE TRIGGER trg_check_garcom_max_mesas
+BEFORE UPDATE ON Mesa
+FOR EACH ROW
+BEGIN
+    DECLARE mesas_atribuidas INT;
+    DECLARE limite_max TINYINT;
+
+    IF OLD.id_func <> NEW.id_func AND NEW.id_func IS NOT NULL THEN
+
+        IF EXISTS (SELECT 1 FROM Garcom WHERE id_func = NEW.id_func) THEN
+
+            SELECT COUNT(*) INTO mesas_atribuidas
+            FROM Mesa
+            WHERE id_func = NEW.id_func;
+
+            SELECT qnt_mesas_max INTO limite_max
+            FROM Garcom
+            WHERE id_func = NEW.id_func;
+
+            IF mesas_atribuidas >= limite_max THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'Erro: este garçom já atingiu o número máximo de mesas.';
+            END IF;
+        END IF;
+    END IF;
 END $$
 
 DELIMITER ;

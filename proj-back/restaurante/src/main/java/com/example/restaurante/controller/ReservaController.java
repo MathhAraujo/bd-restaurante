@@ -102,11 +102,9 @@ public class ReservaController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @DeleteMapping("delete/id/{id_reserva}")
+    @DeleteMapping("delete/{id_reserva}")
     public ResponseEntity<?> deleteReservaById(@PathVariable("id_reserva") short id_reserva) {
-        int ok = reservaService.deleteReservaById(id_reserva);
-
-        if (ok == 0) {
+        if (reservaService.deleteReservaById(id_reserva) == 0) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
