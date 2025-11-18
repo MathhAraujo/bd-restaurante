@@ -32,4 +32,37 @@ public class DataService {
     public List<Cliente_area_DistDTO> fetchClienteAreaDist() {
         return dataDao.findClienteAreaDist();
     }
+
+    public List<Mesa_Full_FunDTO> fetchMesaFull() {
+        return dataDao.findMesaFull();
+    }
+
+    public List<Cliente_Reserva_BiggerThanAvgDTO> fetchClienteReservaBiggerThanAvg() {
+        return dataDao.fetchClienteWithBiggerAvgReserva();
+    }
+
+    public List<Cliente_Reserva_CanceladaDTO> fetchClienteReservaCancelada() {
+        return dataDao.fetchClienteWithReservaCandelada();
+    }
+
+    public Occupation_PercentageDTO fetchOccupationPercentage() {
+        return dataDao.fetchOccupationPercentage();
+    }
+
+    public List<Reserva_Future_FullDTO> fetchReservaFutureFull() {
+        return dataDao.fetchReservaFutureFull();
+    }
+
+    public List<Mesa_Ocupada_FullDTO> fetchMesaOcupadaFull() {
+        return dataDao.fetchMesaOcupadaFull();
+    }
+
+    public List<Cliente_Total_SpentDTO> fetchClienteTotalSpent() {
+        return dataDao.fetchClienteTotalSpent();
+    }
+
+    public List<Comanda_Paga_LogDTO> fetchComandaPagaLog() {
+        return dataDao.fetchComandaPagaLog();
+    }
+
 }

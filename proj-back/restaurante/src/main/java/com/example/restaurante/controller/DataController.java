@@ -36,12 +36,52 @@ public class DataController {
 
     @GetMapping("/group_size_distribution")
     public ResponseEntity<List<Group_Size_DistDTO>> findGroupSizeDist() {
-        return new ResponseEntity<>(dataService.fetchGroupSizeDist(),HttpStatus.OK);
+        return new ResponseEntity<>(dataService.fetchGroupSizeDist(), HttpStatus.OK);
     }
 
     @GetMapping("/cliente_area_distribution")
-    public ResponseEntity<List<Cliente_area_DistDTO>> findClienteAreaDist(){
+    public ResponseEntity<List<Cliente_area_DistDTO>> findClienteAreaDist() {
         return new ResponseEntity<>(dataService.fetchClienteAreaDist(), HttpStatus.OK);
+    }
+
+    @GetMapping("/mesa_full")
+    public ResponseEntity<List<Mesa_Full_FunDTO>> findMesaFull() {
+        return new ResponseEntity<>(dataService.fetchMesaFull(), HttpStatus.OK);
+    }
+
+    @GetMapping("/cliente_reserva_bigger_avg")
+    public ResponseEntity<List<Cliente_Reserva_BiggerThanAvgDTO>> findReserva_Bigger_Avg() {
+        return new ResponseEntity<>(dataService.fetchClienteReservaBiggerThanAvg(), HttpStatus.OK);
+    }
+
+    @GetMapping("/cliente_reserva_cancelada")
+    public ResponseEntity<List<Cliente_Reserva_CanceladaDTO>> findClienteReservaCancelada() {
+        return new ResponseEntity<>(dataService.fetchClienteReservaCancelada(), HttpStatus.OK);
+    }
+
+    @GetMapping("/occupation_percent")
+    public ResponseEntity<Occupation_PercentageDTO> findOccupation_Percentage() {
+        return new ResponseEntity<>(dataService.fetchOccupationPercentage(), HttpStatus.OK);
+    }
+
+    @GetMapping("/reserva_future_full")
+    public ResponseEntity<List<Reserva_Future_FullDTO>> findReserva_Future_Full() {
+        return new ResponseEntity<>(dataService.fetchReservaFutureFull(), HttpStatus.OK);
+    }
+
+    @GetMapping("/mesa_ocupada_full")
+    public ResponseEntity<List<Mesa_Ocupada_FullDTO>> findMesaOcupadaFull() {
+        return new ResponseEntity<>(dataService.fetchMesaOcupadaFull(), HttpStatus.OK);
+    }
+
+    @GetMapping("/cliente_total_spent")
+    public ResponseEntity<List<Cliente_Total_SpentDTO>> findClienteTotal_Spent() {
+        return new ResponseEntity<>(dataService.fetchClienteTotalSpent(), HttpStatus.OK);
+    }
+
+    @GetMapping("/comanda_paga_log")
+    public ResponseEntity<List<Comanda_Paga_LogDTO>> findComandaPagaLog() {
+        return new ResponseEntity<>(dataService.fetchComandaPagaLog(), HttpStatus.OK);
     }
 
 }

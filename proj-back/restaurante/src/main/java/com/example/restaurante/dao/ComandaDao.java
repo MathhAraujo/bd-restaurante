@@ -3,7 +3,6 @@ package com.example.restaurante.dao;
 import com.example.restaurante.enums.Status_Comanda;
 import com.example.restaurante.model.Comanda;
 import lombok.AllArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -28,20 +27,20 @@ public class ComandaDao {
                 rs.getShort("id_comanda"),
                 rs.getShort("id_mesa"),
                 rs.getFloat("total"),
-                LocalDateTime.parse(rs.getString("data_hora_criacao"),  formatter),
+                LocalDateTime.parse(rs.getString("data_hora_criacao"), formatter),
                 Status_Comanda.valueOf(rs.getString("status_comanda"))
         );
     }
 
-    public List<Comanda> findAllComanda(){
+    public List<Comanda> findAllComanda() {
         return this.jdbcTemplate.query("SELECT * FROM Comanda", this::mapRowToComanda);
     }
 
-    public List<Comanda> findComandaById(short idComanda){
+    public List<Comanda> findComandaById(short idComanda) {
         return this.jdbcTemplate.query("SELECT * FROM Comanda WHERE id_comanda = ?", this::mapRowToComanda, idComanda);
     }
 
-    public Short insertComanda(Comanda comanda){
+    public Short insertComanda(Comanda comanda) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         this.jdbcTemplate.update(connection -> {
@@ -57,11 +56,15 @@ public class ComandaDao {
         return keyHolder.getKey().shortValue();
     }
 
-    public int updateComanda(Comanda comanda){
-        return this.jdbcTemplate.update("UPDATE Comanda SET total=?, status_comanda=? WHERE id_comanda=?", comanda.getTotal(), comanda.getStatus_comanda().name(), comanda.getId_comanda() );
+    public int updateComanda(Comanda comanda) {
+        return this.jdbcTemplate.update("UPDATE Comanda SET total=?, status_comanda=? WHERE id_comanda=?", comanda.getTotal(), comanda.getStatus_comanda().name(), comanda.getId_comanda());
     }
 
-    public int deleteComanda(short id_comanda){
+    public int deleteComanda(short id_comanda) {
         return this.jdbcTemplate.update("DELETE FROM Comanda WHERE id_comanda=?", id_comanda);
+    }
+
+    public int addComissao(short id_comanda, float percentual) {
+        return this.jdbcTemplate.update("CALL prc_aplica_desconto(?, ?)", id_comanda, percentual);
     }
 }

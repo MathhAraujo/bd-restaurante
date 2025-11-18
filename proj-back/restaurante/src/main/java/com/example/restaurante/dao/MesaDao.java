@@ -46,7 +46,7 @@ public class MesaDao {
             return ps;
         }, keyHolder);
 
-        if(keyHolder.getKey() == null) {
+        if (keyHolder.getKey() == null) {
             return 0;
         }
 

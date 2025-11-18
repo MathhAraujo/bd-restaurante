@@ -4,7 +4,7 @@ import com.example.restaurante.dao.ReservaDao;
 import com.example.restaurante.dto.ReservaFuturaDTO;
 import com.example.restaurante.dto.Time_PeriodDTO;
 import com.example.restaurante.model.Reserva;
-import lombok.*;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -4,11 +4,12 @@ import com.example.restaurante.enums.Status_Reserva;
 
 import java.time.LocalDateTime;
 
-public record ReservaFuturaDTO(
+public record Cliente_Reserva_CanceladaDTO(
+        String cpf,
         String nome,
         String telefone,
-        short id_reserva,
-        short qnt_pessoas,
+        Short id_reserva,
+        Short qnt_pessoas,
         LocalDateTime data_hora_chegada,
         Status_Reserva status_reserva
 ) {

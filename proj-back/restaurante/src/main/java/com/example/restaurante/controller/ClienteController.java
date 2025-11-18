@@ -43,6 +43,15 @@ public class ClienteController {
         return new ResponseEntity<>(cliente, HttpStatus.OK);
     }
 
+    @GetMapping("/find/all/without_reserva")
+    public ResponseEntity<List<Cliente>> fetchAllClienteWithoutReserva() {
+        List<Cliente> clientes = clienteService.fetchClienteWoutReserva();
+        if (clientes.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(clientes, HttpStatus.OK);
+    }
+
     @PostMapping("/add")
     public ResponseEntity<Cliente> addCliente(@RequestBody Cliente cliente) {
         Cliente newCliente = clienteService.createCliente(cliente);

@@ -13,7 +13,7 @@ CREATE TABLE Reserva (
     cliente_cpf CHAR(11) NOT NULL,
     qnt_pessoas TINYINT NOT NULL,
     data_hora_chegada DATETIME NOT NULL,
-    status_reserva ENUM('ABERTA', 'EM_ATENDIMENTO','CANCELADA') DEFAULT 'ABERTA',
+    status_reserva ENUM('ABERTA', 'EM_ATENDIMENTO', 'FECHADA', 'CANCELADA') DEFAULT 'ABERTA',
     FOREIGN KEY (cliente_Cpf) REFERENCES Cliente(Cpf) ON DELETE CASCADE,
     CHECK (qnt_pessoas > 0)
 );
@@ -160,59 +160,49 @@ ON Funcionario (turno);
 
 -- Views
 
--- Reserva completa
-CREATE OR REPLACE VIEW vw_reservas_completas AS
-	SELECT r.id_reserva, r.cliente_cpf, c.nome, r.qnt_pessoas, r.data_hora_chegada, r.status_reserva, m.id_mesa, m.status_mesa, m.capacidade, g.id_func
-	FROM Reserva r
-	JOIN Cliente c ON r.cliente_cpf = c.cpf
-	LEFT JOIN Mesa m ON m.id_reserva = r.id_reserva
-	LEFT JOIN Garcom g ON m.id_func = g.id_func
-	LEFT JOIN Funcionario f ON g.id_func = f.id_func
-	ORDER BY r.data_hora_chegada;
+-- Reservas em abertas futuras completas
+CREATE OR REPLACE VIEW vw_reservas_futuras_completas AS
+    SELECT r.id_reserva, r.cliente_cpf, c.nome, r.qnt_pessoas, r.data_hora_chegada, r.status_reserva, m.id_mesa, m.status_mesa, m.capacidade, g.id_func
+    FROM Reserva r
+    JOIN Cliente c ON r.cliente_cpf = c.cpf
+    LEFT JOIN Mesa m ON m.id_reserva = r.id_reserva
+    LEFT JOIN Garcom g ON m.id_func = g.id_func
+    LEFT JOIN Funcionario f ON g.id_func = f.id_func
+    WHERE r.status_reserva = 'ABERTA' AND r.data_hora_chegada > NOW()
+    ORDER BY r.id_reserva;
 
 -- Mesas atualmente ocupadas completas
 CREATE OR REPLACE VIEW vw_mesas_ocupadas_completas AS
-	SELECT m.id_mesa, m.status_mesa, m.capacidade, r.id_reserva, r.data_hora_chegada, r.status_reserva, c.cpf, co.id_comanda, co.total
-	FROM Mesa m
-	LEFT JOIN Reserva r ON m.id_reserva = r.id_reserva
-	LEFT JOIN Cliente c ON r.cliente_cpf = c.cpf
-	LEFT JOIN Garcom g ON m.id_func = g.id_func
-	LEFT JOIN Funcionario f ON g.id_func = f.id_func
-	LEFT JOIN Comanda co ON m.id_mesa = co.id_mesa
-	WHERE m.status_mesa = 'OCUPADA'
-	ORDER BY r.data_hora_chegada;
-
+    SELECT m.id_mesa, m.status_mesa, m.capacidade, r.id_reserva, r.qnt_pessoas ,r.data_hora_chegada, r.status_reserva, c.cpf, co.id_comanda, co.status_comanda, co.total
+    FROM Mesa m
+    LEFT JOIN Reserva r ON m.id_reserva = r.id_reserva
+    LEFT JOIN Cliente c ON r.cliente_cpf = c.cpf
+    LEFT JOIN Garcom g ON m.id_func = g.id_func
+    LEFT JOIN Funcionario f ON g.id_func = f.id_func
+    LEFT JOIN Comanda co ON m.id_mesa = co.id_mesa
+    WHERE m.status_mesa = 'OCUPADA'
+    ORDER BY m.id_mesa;
+    
 -- Funções
 
 -- Calculo de comissão do garçom
 DELIMITER $$
 
-CREATE FUNCTION fnc_calcula_comissao(p_id_comanda SMALLINT)
+CREATE FUNCTION fnc_calcula_comissao(valor DECIMAL(10,2))
 RETURNS DECIMAL(10,2)
 DETERMINISTIC
 BEGIN
-    DECLARE v_total DECIMAL(10,2);
-    DECLARE v_estado VARCHAR(20);
-    DECLARE v_comissao DECIMAL(10,2);
+    DECLARE comissao DECIMAL(10,2);
 
-    SELECT total, status_comanda 
-    INTO v_total, v_estado
-    FROM Comanda
-    WHERE id_comanda = p_id_comanda;
-
-    IF v_estado = 'FECHADA' THEN
-        IF v_total < 100 THEN
-            SET v_comissao = v_total * 0.10;
-        ELSEIF v_total < 300 THEN
-            SET v_comissao = v_total * 0.15;
-        ELSE
-            SET v_comissao = v_total * 0.20;
-        END IF;
+    IF valor >= 300 THEN
+        SET comissao = valor * 0.20;
+    ELSEIF valor >= 200 THEN
+        SET comissao = valor * 0.15;
     ELSE
-        SET v_comissao = 0;
+        SET comissao = valor * 0.10;
     END IF;
 
-    RETURN v_comissao;
+    RETURN comissao;
 END$$
 
 DELIMITER ;
@@ -246,7 +236,6 @@ DELIMITER ;
 -- Procedimentos
 
 -- Aplica desconto na comanda inteira
-
 DELIMITER $$
 
 CREATE PROCEDURE prc_aplica_desconto(
@@ -254,18 +243,9 @@ CREATE PROCEDURE prc_aplica_desconto(
     IN p_percentual DECIMAL(5,2)
 )
 BEGIN
-    DECLARE v_total DECIMAL(10,2);
-    DECLARE v_novo_total DECIMAL(10,2);
-
-    SELECT total INTO v_total
-    FROM Comanda
-    WHERE id_comanda = p_id_comanda;
-
     IF p_percentual > 0 AND p_percentual <= 100 THEN
-        SET v_novo_total = v_total - (v_total * (p_percentual / 100));
-
         UPDATE Comanda
-        SET total = v_novo_total
+        SET total = total - (total * (p_percentual / 100))
         WHERE id_comanda = p_id_comanda;
     END IF;
 END$$
@@ -441,13 +421,15 @@ DELIMITER ;
 -- Adiciona o valor da comissão do garçom ao total da comanda
 DELIMITER $$
 
-CREATE TRIGGER trg_atualiza_total_comanda_fechada
+CREATE TRIGGER trg_adiciona_comissao
 BEFORE UPDATE ON Comanda
 FOR EACH ROW
 BEGIN
-    IF NEW.status_comanda = 'FECHADA' AND OLD.status_comanda = 'ABERTA' THEN
-        SET NEW.total = NEW.total + fnc_calcula_comissao(NEW.id_comanda);
+    IF NEW.status_comanda = 'FECHADA'
+       AND OLD.status_comanda = 'ABERTA' THEN
+        SET NEW.total = NEW.total+ fnc_calcula_comissao(NEW.total);
     END IF;
-END $$
+END$$
 
 DELIMITER ;
+

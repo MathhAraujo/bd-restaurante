@@ -18,10 +18,10 @@ public class ClienteDao {
 
     private Cliente mapRowToCliente(ResultSet rs, int rowNum) throws SQLException {
         return new Cliente(
-            rs.getString("cpf"),
-            rs.getString("nome"),
-            rs.getString("telefone"),
-            rs.getObject("data_nascimento", LocalDate.class)
+                rs.getString("cpf"),
+                rs.getString("nome"),
+                rs.getString("telefone"),
+                rs.getObject("data_nascimento", LocalDate.class)
         );
     }
 
@@ -34,7 +34,11 @@ public class ClienteDao {
     }
 
     public List<Cliente> findClienteByNome(String nome) {
-        return this.jdbcTemplate.query("SELECT * FROM Cliente WHERE nome like UPPER(?)", this::mapRowToCliente, "%"+nome+"%".toUpperCase());
+        return this.jdbcTemplate.query("SELECT * FROM Cliente WHERE nome like UPPER(?)", this::mapRowToCliente, "%" + nome + "%".toUpperCase());
+    }
+
+    public List<Cliente> findClienteWoutReserva() {
+        return this.jdbcTemplate.query("SELECT * FROM Cliente AS c LEFT JOIN Reserva AS r ON c.cpf = r.cliente_cpf WHERE r.id_reserva IS NULL", this::mapRowToCliente);
     }
 
 

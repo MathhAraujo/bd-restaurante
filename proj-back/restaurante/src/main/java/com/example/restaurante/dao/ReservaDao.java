@@ -90,7 +90,7 @@ public class ReservaDao {
     }
 
     public int updateReserva(Reserva reserva) {
-        return this.jdbcTemplate.update("UPDATE Reserva SET qnt_pessoas=?, data_hora_chegada=?, status_reserva=? WHERE id_reserva=?", reserva.getQnt_pessoas(), reserva.getData_hora_chegada(), reserva.getStatus_reserva().name(),reserva.getId_reserva());
+        return this.jdbcTemplate.update("UPDATE Reserva SET qnt_pessoas=?, data_hora_chegada=?, status_reserva=? WHERE id_reserva=?", reserva.getQnt_pessoas(), reserva.getData_hora_chegada(), reserva.getStatus_reserva().name(), reserva.getId_reserva());
     }
 
     public int deleteAllReservaByCpf(String cliente_cpf) {

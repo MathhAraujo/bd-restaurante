@@ -1,6 +1,7 @@
 package com.example.restaurante.service;
 
 import com.example.restaurante.dao.ComandaDao;
+import com.example.restaurante.dto.Calc_ComissaoDTO;
 import com.example.restaurante.model.Comanda;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,4 +44,11 @@ public class ComandaService {
         return comandaDao.deleteComanda(id_comanda);
     }
 
+    public Comanda addComissao(Calc_ComissaoDTO calcComissaoDTO) {
+        int out = comandaDao.addComissao(calcComissaoDTO.id_comanda(), calcComissaoDTO.percentual());
+        if (out == 0) {
+            return null;
+        }
+        return fetchComandaById(calcComissaoDTO.id_comanda());
+    }
 }

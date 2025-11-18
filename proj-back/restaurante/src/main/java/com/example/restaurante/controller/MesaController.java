@@ -54,7 +54,7 @@ public class MesaController {
 
     @DeleteMapping("/delete/{id_mesa}")
     public ResponseEntity<Mesa> deleteMesa(@PathVariable short id_mesa) {
-        if(mesaService.deleteMesa(id_mesa) == 0) {
+        if (mesaService.deleteMesa(id_mesa) == 0) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);

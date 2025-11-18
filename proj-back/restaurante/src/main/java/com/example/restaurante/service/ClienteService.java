@@ -36,6 +36,14 @@ public class ClienteService {
         return result;
     }
 
+    public List<Cliente> fetchClienteWoutReserva() {
+        List<Cliente> result = clienteDao.findClienteWoutReserva();
+        if (result.isEmpty()) {
+            return null;
+        }
+        return result;
+    }
+
     public Cliente createCliente(Cliente cliente) {
         if (clienteDao.insertCliente(cliente) == 1) {
             return cliente;
