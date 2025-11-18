@@ -36,7 +36,7 @@ export const comandaAPI = {
   create: (id_mesa) => api.post(`/comanda/add/${id_mesa}`),
   update: (comanda) => api.put('/comanda/update', comanda),
   delete: (id) => api.delete(`/comanda/delete/${id}`),
-  addComissao: (calc_comissao) => api.post('/comanda/call/add_comissao', calc_comissao),
+  addComissao: (calc_comissao) => api.post('/comanda/call/add_desconto', calc_comissao),
 };
 
 // Reserva API
