@@ -45,7 +45,7 @@ public class ComandaService {
     }
 
     public Comanda addComissao(Calc_ComissaoDTO calcComissaoDTO) {
-        int out = comandaDao.addComissao(calcComissaoDTO.id_comanda(), calcComissaoDTO.percentual());
+        int out = comandaDao.addDesconto(calcComissaoDTO.id_comanda(), calcComissaoDTO.percentual());
         if (out == 0) {
             return null;
         }

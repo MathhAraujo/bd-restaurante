@@ -64,7 +64,7 @@ public class ComandaDao {
         return this.jdbcTemplate.update("DELETE FROM Comanda WHERE id_comanda=?", id_comanda);
     }
 
-    public int addComissao(short id_comanda, float percentual) {
+    public int addDesconto(short id_comanda, float percentual) {
         return this.jdbcTemplate.update("CALL prc_aplica_desconto(?, ?)", id_comanda, percentual);
     }
 }

@@ -21,7 +21,7 @@ public class ReservaController {
     @GetMapping("/find/all")
     public ResponseEntity<List<Reserva>> getAllReserva() {
         List<Reserva> reservas = reservaService.fetchAllReserva();
-        if (reservas.isEmpty()) {
+        if (reservas == null) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(reservas, HttpStatus.OK);

@@ -20,7 +20,7 @@ public class ComandaController {
     @GetMapping("/find/all")
     public ResponseEntity<List<Comanda>> getAllComanda() {
         List<Comanda> comandas = comandaService.fetchAllComandas();
-        if (comandas.isEmpty()) {
+        if (comandas == null) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(comandas, HttpStatus.OK);
@@ -44,7 +44,7 @@ public class ComandaController {
         return new ResponseEntity<>(newComanda, HttpStatus.OK);
     }
 
-    @PostMapping("/call/add_comissao")
+    @PostMapping("/call/add_desconto")
     public ResponseEntity<Comanda> addComissao(@RequestBody Calc_ComissaoDTO calc_comissaoDTO) {
         if (calc_comissaoDTO == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

@@ -1,12 +1,14 @@
--- Reserva completa
-CREATE OR REPLACE VIEW vw_reservas_completas AS
+-- Reservas em abertas futuras completas
+CREATE OR REPLACE VIEW vw_reservas_futuras_completas AS
     SELECT r.id_reserva, r.cliente_cpf, c.nome, r.qnt_pessoas, r.data_hora_chegada, r.status_reserva, m.id_mesa, m.status_mesa, m.capacidade, g.id_func
     FROM Reserva r
     JOIN Cliente c ON r.cliente_cpf = c.cpf
     LEFT JOIN Mesa m ON m.id_reserva = r.id_reserva
     LEFT JOIN Garcom g ON m.id_func = g.id_func
     LEFT JOIN Funcionario f ON g.id_func = f.id_func
-    ORDER BY r.data_hora_chegada;
+    WHERE r.status_reserva = 'ABERTA' AND r.data_hora_chegada > NOW()
+    ORDER BY r.id_reserva;
+
 
 -- Mesas ocupadas completas
 CREATE OR REPLACE VIEW vw_mesas_ocupadas_completas AS

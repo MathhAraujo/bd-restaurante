@@ -19,7 +19,7 @@ public class ClienteController {
     @GetMapping("/find/all")
     public ResponseEntity<List<Cliente>> getAllCliente() {
         List<Cliente> clientes = clienteService.fetchAllCliente();
-        if (clientes.isEmpty()) {
+        if (clientes == null) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(clientes, HttpStatus.OK);
@@ -46,7 +46,7 @@ public class ClienteController {
     @GetMapping("/find/all/without_reserva")
     public ResponseEntity<List<Cliente>> fetchAllClienteWithoutReserva() {
         List<Cliente> clientes = clienteService.fetchClienteWoutReserva();
-        if (clientes.isEmpty()) {
+        if (clientes == null) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(clientes, HttpStatus.OK);

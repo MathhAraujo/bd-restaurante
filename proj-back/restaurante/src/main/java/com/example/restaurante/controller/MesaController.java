@@ -19,7 +19,7 @@ public class MesaController {
     @GetMapping("/find/all")
     public ResponseEntity<List<Mesa>> listarMesas() {
         List<Mesa> mesas = mesaService.fetchAllMesa();
-        if (mesas.isEmpty()) {
+        if (mesas == null) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(mesas, HttpStatus.OK);
