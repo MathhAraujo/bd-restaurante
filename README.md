@@ -72,14 +72,14 @@ Project structure:
 
 Navigate to: 
 ```
-  proj-back/restaurante
+proj-back/restaurante
 ```
 
 Configure the database in `application.properties`:
-  ```
-  spring.datasource.url=jdbc:mysql://localhost:3306/bd_restaurante
-  spring.datasource.username=root
-  spring.datasource.password=root
+```
+spring.datasource.url=jdbc:mysql://localhost:3306/bd_restaurante
+spring.datasource.username=root
+spring.datasource.password=root
 ```
 
 Run the application:
